@@ -28,7 +28,7 @@ bool modeStatus = false;
 
 //Defining Pin For Button For LCD
 const int switchPin = 2;
-static int hits = 0;
+static int hits = -1;
 //Variable To Hold The Value Of Switch State
 int switchState = 0;
 int prevSwitchState = 0;
@@ -50,6 +50,11 @@ int y1 = 0;
 ////----JOYSTICK FOR PANTILT----////
 int x2 = 0;
 int y2 = 0;
+
+////Arrays For LCD Display
+char array1[] = "By Raghav Bhavesh Himanshu";
+char array2[] = "Robot ON, Hello :)";
+
 
 
 ////----VOID SETUP----////
@@ -76,14 +81,28 @@ void setup() {
   lcd.init();
   pinMode(switchPin, INPUT_PULLUP);
   lcd.backlight();
-  lcd.setCursor(0, 0);
-  lcd.print("Press The Button");
-  lcd.setCursor(0, 1);
-  lcd.print("To See Different Data");
+    lcd.clear();
+    lcd.setCursor(15, 0);
+    for (int positionCounter2 = 0; positionCounter2 < strlen(array2); positionCounter2++)
+    {
+      lcd.print(array2[positionCounter2]);//prints a 17 character or array without scrolling
+    }
+    delay(200);
+  
+   
+    lcd.setCursor(15, 1); // set the cursor to column 15, line 1 
+    for (int positionCounter2 = 0; positionCounter2 < (strlen(array1)); positionCounter2++)
+    {
+      lcd.scrollDisplayLeft();  //Scrolls the contents of the display one space to the left.
+      lcd.print(array1[positionCounter2]);  // Print a message to the LCD.
+      delay(200); 
+    }
+    delay(200);
 
 }
 
 
+////----VOID LOOP----////
 void loop() {
 
   //--nRF Communication--//
@@ -95,27 +114,30 @@ void loop() {
   switchState = digitalRead(switchPin);
   if (switchState == prevSwitchState) {
     hits = hits + 1;
-    delay(300);
-  }
+    Serial.print(hits);
+    delay(10);
 
-  if (hits == 0)
-  {
+  Serial.println();
+  Serial.print("Hits: ");
+  Serial.print(hits);}
+  
+
+
+  if (hits == 1)
+  { 
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("Distance");
+    lcd.print("Obstacle Dist");
     lcd.setCursor(0, 1);
     lcd.print(dataReceived[0]);
-    lcd.setCursor(3, 1);
-    lcd.print("cm");
-
     delay(200);
   }
 
-  else if (hits == 1)
+  else if (hits == 2)
   {
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("Warm Body: ");
+    lcd.print("Living Body: ");
     lcd.setCursor(0, 1);
     if (dataReceived[1] == 1) {
       lcd.print("Positive");
@@ -125,7 +147,7 @@ void loop() {
     }
     delay(200);
   }
-  else if ( hits == 2)
+  else if ( hits == 3)
   {
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -140,7 +162,7 @@ void loop() {
     delay(200);
   }
 
-  else if ( hits == 3)
+  else if ( hits == 4)
   {
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -151,7 +173,7 @@ void loop() {
     lcd.print("C");
     delay(200);
   }
-  else if ( hits == 4)
+  else if ( hits == 5)
   {
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -163,35 +185,55 @@ void loop() {
     delay(200);
   }
 
-  else if ( hits == 5)
-  {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Motion X: ");
-    lcd.setCursor(10, 0);
-    lcd.print(x1);
-    lcd.setCursor(0, 1);
-    lcd.print("Motion Y: ");
-    lcd.setCursor(10, 1);
-    lcd.print(y1);
-    delay(100);
-  }
-
   else if ( hits == 6)
   {
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("Camera X: ");
-    lcd.setCursor(10, 0);
-    lcd.print(x2);
+    lcd.print("X: ");
+    lcd.setCursor(5, 0);
+    if (x1<400) {
+      lcd.print("Right");}
+    else if (x1>400 and x1<550){
+      lcd.print("Center");}
+     else if (x1>550){
+      lcd.print("Left");}
     lcd.setCursor(0, 1);
-    lcd.print("Camera Y: ");
-    lcd.setCursor(10, 1);
-    lcd.print(y2);
+    lcd.print("Y: ");
+    lcd.setCursor(5, 1);
+       if (y1<400) {
+      lcd.print("Backward");}
+    else if (y1>400 and x1<550){
+      lcd.print("Center");}
+     else if (y1>550){
+      lcd.print("Forward");}
     delay(100);
   }
 
   else if ( hits == 7)
+  {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Cam X: ");
+    lcd.setCursor(7, 0);
+     if (x2<400) {
+      lcd.print("Right");}
+    else if (x2>400 and x1<550){
+      lcd.print("Center");}
+     else if (x2>550){
+      lcd.print("Left");}
+    lcd.setCursor(0, 1);
+    lcd.print("Cam Y: ");
+    lcd.setCursor(7, 1);
+      if (y2<400) {
+      lcd.print("Backward");}
+    else if (y2>400 and x1<550){
+      lcd.print("Center");}
+     else if (y2>550){
+      lcd.print("Forward");}
+    delay(100);
+  }
+
+  else if ( hits == 8)
   {
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -207,37 +249,19 @@ void loop() {
       lcd.print("Go ahead :)");
     }
     lcd.print(dataReceived[3]);
-    delay(200);
-  }
-
-  else if ( hits == 7)
-  {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Mode Status: ");
-    lcd.setCursor(0, 1);
-    if (modeStatus == true) {
-      if (dataReceived[5] == 1) {
-        lcd.print("Focus Mode");
-      }
-      else  {
-
-        lcd.setCursor(0, 1);
-        lcd.print("Auto-Sweep Mode");
-      }
-    }
-    else {
-      lcd.print("Normal Mode");
-    }
-    delay(200);
+    delay(100);
   }
 
 
 
 
   else if (hits > 8) {
-    hits = 0; //Counter Reset
+    hits = -1; //Counter Reset
   }
+
+  Serial.println();
+  Serial.print("Mode Status: ");
+  Serial.print(modeStatus);
 
 
   //--Joystick--//
@@ -272,6 +296,7 @@ void loop() {
   if (blueStatus == true ) {
     if (Serial.available() > 0) {
       incomingValue = Serial.read();
+      Serial.println("Incoming Value: ");
       Serial.print(incomingValue);
 
       if (incomingValue == '1') {
@@ -293,6 +318,7 @@ void loop() {
   }
 
 }
+
 
 
 //--nRF GET DATA FUNCTION--//
