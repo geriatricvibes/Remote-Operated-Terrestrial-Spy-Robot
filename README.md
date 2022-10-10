@@ -1,4 +1,4 @@
 # Remote-Operated-Terrestrial-Spy-Robot
 There are innumerable applications of robotics in countless fields, and our undertaking is one such application. The Terrestrial Robot - the final achievement of our project, is a land-based unmanned rover, suitable for on and off-field ambient data gathering operations. Through the use of sensors, which include infrared sensors, ultrasonic sensors, temperature and humidity sensors, to name a few, along with wireless camera modules, the robot is able to perform information and data gathering tasks in a wide array of environments from a distance through the use of wireless communication channels.
 
-##The MRP.pdf file which is the project report maybe slightly outdated as we have made improvements and chnages to our code and added somme additional features to the robot as well.
+##Warning: The MRP.pdf file which is the project report is outdated as we have made improvements and chnages to our code and added somme additional features to the robot as well.
