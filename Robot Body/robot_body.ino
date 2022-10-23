@@ -1,48 +1,14 @@
-//-----Sensor Data Transmmitter-----//
+//-----Robot Body Code-----//
 
-//Including Libraries
-
-//--nRF Module--//
+//--nRF Module Libaries--//
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
 
-//Defining Pins
-
-//To add DHT Sensor Code
-#include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <DHT.h>
-#include <DHT_U.h>
-
-//--nRF Module--//
+//--nRF Module Pins--//
 #define CE_PIN   9
 #define CSN_PIN 10
 
-//--Rain Sensor--//
-#define sensorPower 35
-#define sensorPin 36
-int rainstatus = 0;
-
-//--PIR Sensor--//
-#define PIRSensor 31 //Signal Pin Of Sensor To Digital Pin 5
-int state = LOW;
-int val = 0;
-int PIR = 0;
-
-//DHT11 Sensor
-float h, t;
-#define DHTPIN 36
-#define DHTTYPE    DHT11     // DHT 11 
-DHT_Unified dht(DHTPIN, DHTTYPE);
-
-//--Ultrasonic Sensor--//
-#define echoPin 28// Attach digital pin 8 Arduino to pin Echo of HC-SR04
-#define trigPin 29 //Attach digital pin 9 Arduino to pin Trig of HC-SR04
-
-//Defining Variables For Ultrasonic Sensor
-long duration; // variable for the duration of sound wave travel
-int distance; // variable for the distance measurement3
 
 //Defining Pipe Address For nRF Module
 const byte slaveAddress[5] = {'R', 'x', 'A', 'A', 'A'};
@@ -58,7 +24,38 @@ bool newData = false;
 //Interval Between Communication
 unsigned long currentMillis;
 unsigned long prevMillis;
-unsigned long txIntervalMillis = 100; // send once 0.1 of a second
+unsigned long txIntervalMillis = 10; // send once 0.1 of a second
+
+//To add DHT Sensor Code
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <DHT_U.h>
+
+//DHT11 Sensor
+float h, t;
+#define DHTPIN 36
+#define DHTTYPE    DHT11     // DHT 11 
+DHT_Unified dht(DHTPIN, DHTTYPE);
+
+//--Rain Sensor--//
+#define sensorPower 35
+#define sensorPin 36
+int rainstatus = 0;
+
+//--PIR Sensor--//
+#define PIRSensor 31 //Signal Pin Of Sensor To Digital Pin 5
+int state = LOW;
+int val = 0;
+int PIR = 0;
+
+//--Ultrasonic Sensor--//
+#define echoPin 28// Attach digital pin 8 Arduino to pin Echo of HC-SR04
+#define trigPin 29 //Attach digital pin 9 Arduino to pin Trig of HC-SR04
+
+//Defining Variables For Ultrasonic Sensor
+long duration; // variable for the duration of sound wave travel
+int distance; // variable for the distance measurement3
 
 //Movement L293D
 #define IN1 2
@@ -69,25 +66,29 @@ unsigned long txIntervalMillis = 100; // send once 0.1 of a second
 #define EN2 7 // to control speed of motor 2
 #define LED A0
 
-//Defining variables for movement
+//Defining variables for movement(l293d + camera)
 int x1, y1, x2, y2 = 0;
 int speed = 0;
 
-//Including Libraries and variables For Pan Tilt
+//----Pan Tilt----////
 #include <Servo.h>
 Servo tilt;  // create servo object to control a servo
 Servo pan;
 int tiltVal;    // variable to read the value from the analog pin
 int panVal;
 
+//----TFT----//
+// include TFT and SPI libraries
+#include <TFT.h>
+#include <SPI.h>
 
-//TFT
-#include <TFT.h> // Hardware-specific library
-#define CS   32
-#define DC   33
-#define RESET  34
+//Pins
+#define cs   26
+#define dc   25
+#define rst  24
 
-TFT TFTscreen = TFT(CS, DC, RESET);
+//Creating An Instance Of The TFT
+TFT TFTscreen = TFT(cs, dc, rst);
 
 ////----VOID SETUP----////
 void setup() {
@@ -126,24 +127,22 @@ void setup() {
   pinMode(IN2, OUTPUT);        // to L293D
   pinMode(IN3, OUTPUT);        // to L293D
   pinMode(IN4, OUTPUT);        // to L293D
-
   pinMode(LED, OUTPUT);        //to glow led when distance is less than 20 cm
-
   pinMode(EN1, OUTPUT);        //pwm pin to control speed
   pinMode(EN2, OUTPUT);        //pwm pin to control speed
 
 
   //Pan-Tilt
+  pinMode(11, OUTPUT);
+  pinMode(12, OUTPUT);
   tilt.attach(11);  // attaches the servo
   pan.attach(12);
 
   //TFT
   TFTscreen.begin();
-  // clear the screen with a black background
-  TFTscreen.background(0, 0, 0);
-  //set the text size
-  TFTscreen.setTextSize(2);
-
+  TFTscreen.background(0, 0, 0); // clear the screen with a black background
+  TFTscreen.setTextSize(1);
+  TFTscreen.setRotation(1);
 
 }
 
@@ -184,7 +183,6 @@ void loop() {
     }
   }
 
-
   //--Rain Sensor--//
   int rainval = readRainSensor(); //Obtaining Value By Calling Function
   if (rainval == 1) {
@@ -222,32 +220,16 @@ void loop() {
     Serial.println(F("%"));
   }
 
-  //TFT
-  int redRandom = random(0, 255);
-  int greenRandom = random (0, 255);
-  int blueRandom = random (0, 255);
-
-  // set a random font color
-  TFTscreen.stroke(redRandom, greenRandom, blueRandom);
-
-  // print Hello, World! in the middle of the screen
-  TFTscreen.text("Raghav", 2, 57);
-  TFTscreen.text("Bhavesh", 4, 57);
-  TFTscreen.text("Himanshu", 6, 57);
-
-  // wait 200 miliseconds until change to next color
-  delay(700);
-
-
 
   //Motion
-
   x1 = ackData[0];
   y1 = ackData[1];
 
-  if (dataToSend[0] < 20) {
+  if (dataToSend[0] < 30) {
     digitalWrite(LED, HIGH);
 
+    digitalWrite(EN1, LOW);
+    digitalWrite(EN2, LOW);
 
     //--Movement(L2393D)--//
     if (x1 > 650) {
@@ -310,7 +292,7 @@ void loop() {
     digitalWrite(LED, LOW);
 
     //--Movement(L2393D)--//
-    if (x1 > 650) {
+    if (y1 > 650) {
 
       //Forward
       digitalWrite(IN1, HIGH);
@@ -325,8 +307,7 @@ void loop() {
       analogWrite(EN2, speed);
 
     }
-
-    else if (x1 < 350) {
+    else if (y1 < 350) {
       //Backward
       digitalWrite(IN2, HIGH);
       digitalWrite(IN3, HIGH);
@@ -339,8 +320,7 @@ void loop() {
       analogWrite(EN1, speed);
       analogWrite(EN2, speed);
     }
-
-    else if (650 < y1)
+    else if (x1 < 350)
     {
       //Left
       digitalWrite(IN4, HIGH);
@@ -354,8 +334,7 @@ void loop() {
       analogWrite(EN1, speed);
       analogWrite(EN2, speed);
     }
-
-    else if (y1 < 350 ) {
+    else if (650 < x1) {
       //For Right
       digitalWrite(IN3, HIGH);
       digitalWrite(IN1, HIGH);
@@ -369,7 +348,6 @@ void loop() {
       analogWrite(EN2, speed);
 
     }
-
     else {
       //STOP THE ROBOT
       digitalWrite(IN4, LOW);
@@ -384,56 +362,61 @@ void loop() {
   //Pan Tilt
   //Confirms Mode (ackData is the mode variable)
   if (ackData[4] == 1) {
+    ackData[4] = 0;
     int pos = 0;
     int IRSensor = 37; //(IR Sensor Pin)
 
     for (pos = 0; pos <= 180; pos += 1) {                  //auto sweep from 0 to 180 degress by 1 degree incr.
-
       int statusSensor = digitalRead (IRSensor);  //Reads IR Sensor
       if (statusSensor == LOW) {
         pan.detach();                                    //servo detaches when object detected
         Serial.println("Object detected");
         dataToSend[5] = 1;                               //Sends varible for Focus Moudle
       }
-
       else {
-        pan.attach(12);
+        pan.attach(11);
         pan.write(pos);
-        delay(10);
         dataToSend[5] = 0;                            //Sends varible for Auto Sweep Mode
       }
     }
 
     for (pos = 180; pos >= 0; pos -= 1) {                  //auto sweep from 0 to 180 degress by 1 degree incr.
-
       int statusSensor = digitalRead (IRSensor);
       if (statusSensor == LOW) {
         pan.detach();                                    //servo detaches when object detected
         Serial.println("Object detected");
         dataToSend[5] = 1;;
       }
-
       else {
-        pan.attach(12);
+        pan.attach(11);
         pan.write(pos);
-        delay(10);
         dataToSend[5] = 0;
       }
     }
   }
 
-
   //Normal Mode
   else {
     //Vertical
-    tiltVal = map(ackData[2], 500, 0, 180, 90);
+    tilt.attach(11);
+    tiltVal = map(ackData[3], 0, 1023, 90, 180);
     tilt.write(tiltVal);
 
     //Horizontal
-    panVal = map(ackData[3], 0, 1023, 0, 180);
+    pan.attach(12);
+    panVal = map(ackData[2], 0, 1023, 0, 180);
     pan.write(panVal);
-    delay(100);
   }
+
+  //TFT
+  TFTscreen.setRotation(1);
+  TFTscreen.stroke(255, 255, 224); //Light Yellow Font Colour
+
+  //Printing On TFT
+  TFTscreen.text("Shivaji College", 0, 27);
+  TFTscreen.text("Robotics Project!", 0, 47);
+  TFTscreen.text("Made By:", 0, 67);
+  TFTscreen.text("Raghav, Bhavesh, Himanshu", 0, 87);
 }
 
 ////----NRF Send Function----////
